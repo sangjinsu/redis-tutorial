@@ -98,5 +98,104 @@
 
 ## Redis Replication
 
+- Async Replication
+  - Replication Lag 발생 가능
 
+- Replicaof >= 5.0.0 or slaveof 명령으로 설정 가능 
+  - Replicaof hostname port
+
+- DBMS 로 보면 statement replication 가 유사 
+
+- Replication 설정 과정
+
+  - Secondary 에 replicaof or slaveof 명령을 전달 
+
+  - Secondary 는 primary  에 sync 명령 전달
+
+  - primanry 는 현재 메모리 상태를 저장하기 위해 Fork
+
+  - Fork 한 프로세서는 현재 메모리 정보를 disk 에 dump 
+
+  - 해당 정보를 secondary 에 전달 
+
+  - fork 이후 데이터를 secondary 에 계속 전달 
+
+    
+
+### 주의점
+
+- Replication 과정에서 fork 발생하므로 메모리 부족이 발생할 수 있다 
+- Redis-cli --rdb 명령은 현재 상태 메모리 스냅샷을 가져오므로 같은 문제를 발생시킴
+- AWS나 클라우드의 Redis 는 좀 다르게 구현되어서 좀 더 해당 부분이 안정적
+
+
+
+## redis.conf 권장 설정 Tip
+
+- maxclient 설정 50000
+- RDB / AOF 설정 off
+- 특정 commands disable
+  - keys
+  - AWS elasticCache 는 이미 하고 있음
+
+- 전체 장애의 90% 이상이 keys 와 save 설정을 사용해서 발생
+
+- 적절한 ziplist 설정
+
+  
+
+## Redis 데이터 분산
+
+- 데이터 특성에 따라 선택 방법이 달라진다 
+
+### 데이터 분산 방법
+
+- application
+
+  -  consistent hashing
+    - twemproxy 를 사용하는 방법으로 쉽게 사용 가능
+
+  - sharding 
+
+- redis cluster
+
+
+
+## sharding
+
+- 데이터를 어떻게 나눌 것인가 
+- 데이터를 어떻게 찾을 것인가 
+
+### Range 
+
+- 특정 Range 를 정의하고 해당 Range 에 속하면 거기에 저장
+
+### Moduler
+
+-  N % K 로 서버 데이터 결정 
+- Range 보다 데이터를 균등하게 분배할 가능성이 높다 
+- 서버 한대가 추가될 때마다 재분배 양이 많아진다 
+
+### Indexed 
+
+- 해당 key 가 어디에 저장되어야 할 관리 서버가 따로 존재 
+
+
+
+### Redis Cluster
+
+- 특정 Redis 서버는 slot range  를 가지고 있고 데이터 migration 은 이 slot 단위의 데이터를 다른 서버로 전달하게 된다  (migrateCommand  이용)
+- 장점 
+  - 자체적인 Primary Secondary Failover
+  - slot 단위의 데이터 관리 
+
+- 단점 
+  - 메모리 사용량이 더 많음
+  - migration 자체는 관리자 시점을 결정해야 함
+  - Library 구현이 필요함
+
+## Redis Failover
+
+- Coordinator 기반  Failover
+- VIP / DNS 기반 Failover 
 
